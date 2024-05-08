@@ -68,6 +68,10 @@ impl eframe::App for TemplateApp {
                     .labelled_by(name_label.id);
             });
 
+            if ui.button("Reset").clicked() {
+                self.points = vec![];
+            }
+
             if ui.button("Throw darts").clicked() {
                 for _ in 0..self.darts_to_throw.parse::<i32>().unwrap() {
                     let x = rand::random::<f64>() * 2.0 - 1.0;
