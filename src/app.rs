@@ -1,20 +1,22 @@
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
-    // Example stuff:
-    label: String,
+// if we add new fields, give them default values when deserializing old state
+use eframe::egui;
+use egui::*;
+use egui_plot::{Legend, Line, Plot, PlotPoints, Points};
+use std::f64::consts::TAU;
 
-    #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct TemplateApp {
+    points: Vec<[f64; 2]>,
+    darts_to_throw: String,
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            points: vec![],
+            darts_to_throw: "0".to_string(),
         }
     }
 }
@@ -41,69 +43,63 @@ impl eframe::App for TemplateApp {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
-            egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                    ui.add_space(16.0);
-                }
-
-                egui::widgets::global_dark_light_mode_buttons(ui);
-            });
-        });
-
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
+            ui.heading("Approximating the Value of Pi");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
-            });
+            let my_plot = Plot::new("My Plot").legend(Legend::default());
 
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
-
-            ui.separator();
-
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/main/",
-                "Source code."
+            // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
+            ui.label(format!(
+                "The number of darths thrown: {}",
+                self.points.len()
+            ));
+            ui.label(format!(
+                "The number of darths inside the circle: {}",
+                self.points
+                    .iter()
+                    .filter(|point| (point[0] * point[0]) + (point[1] * point[1]) <= 1.0)
+                    .count()
             ));
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                powered_by_egui_and_eframe(ui);
-                egui::warn_if_debug_build(ui);
+            ui.horizontal(|ui| {
+                let name_label = ui.label("How many darts to throw?");
+                ui.text_edit_singleline(&mut self.darts_to_throw)
+                    .labelled_by(name_label.id);
+            });
+
+            if ui.button("Throw darts").clicked() {
+                for _ in 0..self.darts_to_throw.parse::<i32>().unwrap() {
+                    let x = rand::random::<f64>() * 2.0 - 1.0;
+                    let y = rand::random::<f64>() * 2.0 - 1.0;
+                    self.points.push([x, y]);
+                }
+            }
+
+            let n = 512;
+
+            let circle_points: PlotPoints = (0..=n)
+                .map(|i| {
+                    let t = remap(i as f64, 0.0..=(n as f64), 0.0..=TAU);
+                    [t.cos(), t.sin()]
+                })
+                .collect();
+
+            let circle = Line::new(circle_points).name("circle");
+
+            let rectangle = Line::new(vec![
+                [-1.0, -1.0],
+                [1.0, -1.0],
+                [1.0, 1.0],
+                [-1.0, 1.0],
+                [-1.0, -1.0],
+            ]);
+
+            my_plot.show(ui, |plot_ui| {
+                plot_ui.line(circle);
+                plot_ui.line(rectangle);
+                plot_ui.points(Points::new(self.points.clone()).radius(1.0))
             });
         });
     }
-}
-
-fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 0.0;
-        ui.label("Powered by ");
-        ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        ui.label(" and ");
-        ui.hyperlink_to(
-            "eframe",
-            "https://github.com/emilk/egui/tree/master/crates/eframe",
-        );
-        ui.label(".");
-    });
 }
