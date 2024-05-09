@@ -47,7 +47,10 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Approximating the Value of Pi");
 
-            let my_plot = Plot::new("My Plot").legend(Legend::default());
+            let my_plot = Plot::new("My Plot")
+                .legend(Legend::default())
+                .height(700.0)
+                .width(700.0);
 
             // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
             ui.label(format!(
