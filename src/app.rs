@@ -49,8 +49,8 @@ impl eframe::App for TemplateApp {
 
             let my_plot = Plot::new("My Plot")
                 .legend(Legend::default())
-                .height(700.0)
-                .width(700.0);
+                .height(500.0)
+                .width(500.0);
 
             // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
             ui.label(format!(
@@ -64,7 +64,6 @@ impl eframe::App for TemplateApp {
                     .filter(|point| (point[0] * point[0]) + (point[1] * point[1]) < 1.0)
                     .count()
             ));
-
             ui.horizontal(|ui| {
                 let name_label = ui.label("How many darts to throw?");
                 ui.text_edit_singleline(&mut self.darts_to_throw)
