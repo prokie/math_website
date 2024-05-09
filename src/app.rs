@@ -61,7 +61,7 @@ impl eframe::App for TemplateApp {
                 "The number of darths inside the circle: {}",
                 self.points
                     .iter()
-                    .filter(|point| (point[0] * point[0]) + (point[1] * point[1]) <= 1.0)
+                    .filter(|point| (point[0] * point[0]) + (point[1] * point[1]) < 1.0)
                     .count()
             ));
 
